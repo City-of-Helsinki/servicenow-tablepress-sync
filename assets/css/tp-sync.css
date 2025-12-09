@@ -1,0 +1,31 @@
+
+.tp-badge {
+  display: block;
+	text-align: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  color: #fff;
+	line-height: 1.2em;
+}
+
+.tp-badge-saatavilla { background-color: #008741; }
+.tp-badge-tilattavissa-rajoituksin { background-color: #FFC61E; color: #000; }
+.tp-badge-ei-saatavilla { background-color: #BD2719; }
+.tp-badge-ei-kasitelty, .tp-badge-tarkastettavana
+{ 
+  background-color: #DEDFE1; 
+  color: #000;
+}
+
+.tp-additional-info, .tp-departments {
+	font-size: 0.9em;
+}
+
+.tp-additional-info .tp-additional-info-header {
+	font-weight: 700;
+}
+
+table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control {
+  padding-left: 1.7em !important;
+}

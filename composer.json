@@ -1,0 +1,10 @@
+{
+	"name": "city-of-helsinki/servicenow-tablepress-sync",
+	"type": "wordpress-plugin",
+	"authors": [
+		{
+        "name": "HiQ",
+        "homepage": "https://www.hiq.fi"
+        }
+	]
+}
