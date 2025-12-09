@@ -9,24 +9,24 @@ The plugin provides a graphical interface for configuring all required settings 
 
 ### WP-CLI syntax
 
-wp servicenow sync [--url=<url>] [--user=<username>] [--pass=<password>] [--table=<id>] [--dry-run] [--force-run]
+```wp servicenow sync [--url=<url>] [--user=<username>] [--pass=<password>] [--table=<id>] [--dry-run] [--force-run]```
 
 ### WP-CLI examples
 
 #### Run a test without saving changes
-wp servicenow sync --dry-run
+```wp servicenow sync --dry-run```
 
 #### Force a full sync for table ID 1
-wp servicenow sync --table=1 --force-run
+```wp servicenow sync --table=1 --force-run```
 
 #### Override API settings from the command line
-wp servicenow sync --url="https://servicenow.fi/api" --user="john" --pass="doe"
+```wp servicenow sync --url="https://servicenow.fi/api" --user="john" --pass="doe"```
 
 #### Show the current timestamp
-wp servicenow lastsync
+```wp servicenow lastsync```
 
 #### Set the timestamp for table ID 1
-wp servicenow lastsync --table=1 --set="2025-01-01 00:00:00"
+```wp servicenow lastsync --table=1 --set="2025-01-01 00:00:00"```
 
 ## License
 This plugin is licensed under GPLv3. See [LICENSE](https://github.com/City-of-Helsinki/servicenow-tablepress-sync/blob/main/LICENSE) for the full license text.
