@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ServiceNow TablePress Sync
  * Description: Updates a TablePress table with "Sovellusrekisteri" data via customized ServiceNow API.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires at least: 6.8
  * Requires PHP: 8.0
  * Author: HiQ
@@ -10,7 +10,7 @@
  * Text Domain: servicenow-tablepress-sync
  */
 
-if ( ! defined('ABSPATH') ) { exit; }
+if (!defined('ABSPATH')) exit;
 
 if (!defined('SN_TP_SYNC_OPT_API_URL'))        define('SN_TP_SYNC_OPT_API_URL',        'servicenow_tablepress_sync_api_url');
 if (!defined('SN_TP_SYNC_OPT_API_USER'))       define('SN_TP_SYNC_OPT_API_USER',       'servicenow_tablepress_sync_api_user');
@@ -22,6 +22,7 @@ if (!defined('SN_TP_SYNC_OPT_LAST_SYNC_MAP'))  define('SN_TP_SYNC_OPT_LAST_SYNC_
 require_once plugin_dir_path(__FILE__) . 'src/Sync.php';
 require_once plugin_dir_path(__FILE__) . 'src/CLI.php';
 require_once plugin_dir_path(__FILE__) . 'src/Admin.php';
+require_once plugin_dir_path(__FILE__) . 'src/Cron.php';
 
 register_activation_hook(__FILE__, function () {
     add_option(SN_TP_SYNC_OPT_API_URL,        '', '', false);
@@ -30,10 +31,16 @@ register_activation_hook(__FILE__, function () {
     add_option(SN_TP_SYNC_OPT_TABLE_ID,       0,  '', false);
     add_option(SN_TP_SYNC_OPT_LAST_RUN,       array(), '', false);
     add_option(SN_TP_SYNC_OPT_LAST_SYNC_MAP,  array(), '', false);
+    \ServiceNowTablePressSync\Cron::activate();
+});
+
+register_deactivation_hook(__FILE__, function () {
+    \ServiceNowTablePressSync\Cron::deactivate();
 });
 
 add_action('plugins_loaded', function () {
     \ServiceNowTablePressSync\Admin::init();
+    \ServiceNowTablePressSync\Cron::init();
 });
 
 if (defined('WP_CLI') && WP_CLI) {
