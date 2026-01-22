@@ -173,12 +173,12 @@ class Sync
             }
 
             return array(
-                $scalar($record['number']      ?? ''),
-                $scalar($record['name']        ?? ''),
+                $scalar($record['number'] ?? ''),
+                $scalar($record['name'] ?? ''),
                 $badge($record['educators'] ?? ''),
-                $badge($record['students']  ?? ''),
-                $scalar($record['chargeable']  ?? ''),
-                $scalar($implode_if_array($record['subjects']    ?? '')),
+                $badge($record['students'] ?? ''),
+                $scalar($record['chargeable'] ?? ''),
+                $scalar($implode_if_array($record['subjects'] ?? '')),
                 $scalar($departments_str),
                 $additionalInfo,
                 self::format_updated_display($record['updated'] ?? ''),
@@ -257,11 +257,11 @@ class Sync
         $save = $model->save($table);
         if (is_wp_error($save)) return $save;
 
-        if ($maxUpdatedTs > 0) {
-            $lastSyncToStore = gmdate('Y-m-d H:i:s', $maxUpdatedTs);
-            self::set_last_sync($table_id, $lastSyncToStore);
-        } else {
-            self::set_last_sync($table_id, current_time('mysql', true));
+        if ($updatedCount > 0 && $maxUpdatedTs > 0) {
+            self::set_last_sync(
+                $table_id,
+                gmdate('Y-m-d H:i:s', $maxUpdatedTs)
+            );
         }
 
         return array('dry_run'=>false, 'rows'=>max(0, count($table['data'])-1), 'updated'=>$updatedCount);

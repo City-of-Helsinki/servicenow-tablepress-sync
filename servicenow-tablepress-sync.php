@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ServiceNow TablePress Sync
  * Description: Updates a TablePress table with "Sovellusrekisteri" data via customized ServiceNow API.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Requires at least: 6.8
  * Requires PHP: 8.0
  * Author: HiQ

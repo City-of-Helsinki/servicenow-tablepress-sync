@@ -64,7 +64,7 @@ class Admin
     private static function store_last_run(bool $ok, string $message, int $rows, int $updated): void
     {
         update_option(\SN_TP_SYNC_OPT_LAST_RUN, array(
-            'time_utc' => current_time('mysql', true),
+            'time_utc' => gmdate('Y-m-d H:i:s'),
             'success'  => $ok,
             'message'  => $message,
             'rows'     => $rows,
@@ -133,7 +133,7 @@ class Admin
             <h2>Tilatiedot</h2>
             <table class="widefat striped" style="max-width: 720px;">
                 <tbody>
-                <tr><th style="width:220px;">Viimeisin haettu aikaleima (UTC)</th><td><?php echo $last_sync !== '' ? esc_html($last_sync) : '—'; ?></td></tr>
+                <tr><th style="width:220px;">Viimeisin haettu aikaleima (API)</th><td><?php echo $last_sync !== '' ? esc_html($last_sync) : '—'; ?></td></tr>
                 <tr><th>Viimeisin ajo (UTC)</th><td><?php echo isset($last_run['time_utc']) ? esc_html($last_run['time_utc']) : '—'; ?></td></tr>
                 <tr><th>Tulos</th><td><?php echo isset($last_run['success']) ? ($last_run['success'] ? 'Onnistui' : 'Epäonnistui') : '—'; ?></td></tr>
                 <tr><th>Rivejä</th><td><?php echo isset($last_run['rows']) ? (int)$last_run['rows'] : 0; ?></td></tr>
