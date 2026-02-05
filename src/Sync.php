@@ -1,8 +1,8 @@
 <?php
 namespace ServiceNowTablePressSync;
 
-class Sync
-{
+class Sync {
+    
     // GET and SET last sync timestamp
     public static function get_last_sync(int $table_id): string {
         $map = get_option(\SN_TP_SYNC_OPT_LAST_SYNC_MAP, array());
@@ -79,8 +79,8 @@ class Sync
     }
 
     // RUN the incremental sync
-    public static function run_incremental(int $table_id, string $api_url, string $api_user, string $api_pass, bool $dry_run = false, bool $force_run = false)
-    {
+    public static function run_incremental(int $table_id, string $api_url, string $api_user, string $api_pass, bool $dry_run = false, bool $force_run = false) {
+        
         if (!class_exists('TablePress')) return new \WP_Error('tablepress_missing', 'TablePress is not available.');
         $model = \TablePress::$model_table;
 
@@ -106,20 +106,23 @@ class Sync
         }
 
         // Ensure 9-column schema with Number first
-        $defaultHeader9 = array('Number','Name','Educators','Students','Chargeable','Subjects','Departments','Additional Info','Updated');
-        $header = (isset($table['data'][0]) && is_array($table['data'][0])) ? $table['data'][0] : $defaultHeader9;
-        $hasNumber = isset($header[0]) && strip_tags((string)$header[0]) === 'Number';
-        if (!$hasNumber) { $header = $defaultHeader8; }
+        $defaultHeader9 = array(
+            'Number','Name','Educators','Students','Chargeable','Subjects','Departments','Additional Info','Updated'
+        );
+        $header = (isset($table['data'][0]) && is_array($table['data'][0])) 
+            ? $table['data'][0] 
+            : $defaultHeader9;
+
         $header = array_slice(array_pad($header, 9, ''), 0, 9);
 
         // Build existing map by Number (col 0)
         $existing = isset($table['data']) && is_array($table['data']) ? $table['data'] : array();
-        $map = array(); $order = array();
+
         foreach ($existing as $idx => $row) {
             if ($idx === 0) continue;
             $num = isset($row[0]) ? trim((string)$row[0]) : '';
             if ($num === '') continue;
-            $map[$num] = $row; $order[] = $num;
+            $map[$num] = $row;
         }
 
         // Row builder helpers
@@ -129,7 +132,7 @@ class Sync
             if (is_array($v)) return implode(', ', array_map('strval', $v));
             return wp_json_encode($v);
         };
-        $implode_if_array = function($v): string { return is_array($v) ? implode(', ', array_map('strval', $v)) : (string)$v; };
+
         $badge = function($value): string {
             $status = trim((string)$value);
             if ($status === '') return '';
@@ -142,17 +145,26 @@ class Sync
                 esc_html($status)
             );
         };
-        $toRow = function(array $record) use ($scalar, $implode_if_array, $badge): array {
 
-            // SORT departments: if it's an array, sort case-insensitive natural order before imploding
-            $departments_raw = $record['departments'] ?? '';
-            $departments_str = '';
-            if (is_array($departments_raw)) {
-                $departments = array_map('strval', $departments_raw);
-                usort($departments, function($a, $b) { return strnatcasecmp($a, $b); });
-                $departments_str = '<div class="tp-departments">' . implode(', ', $departments) . '</div>';
+        $toRow = function(array $record) use ($scalar, $badge): array {
+
+            $hide_departments = (
+                mb_strtolower(trim((string)($record['educators'] ?? ''))) === 'ei saatavilla' &&
+                mb_strtolower(trim((string)($record['students'] ?? ''))) === 'ei saatavilla'
+            );
+
+            // SORT departments, unless they should be hidden
+            if ($hide_departments) {
+                $departments_str = '<div class="tp-additional-info">Ei saatavilla</div>';
             } else {
-                $departments_str = (string)$departments_raw;
+                $departments_raw = $record['departments'] ?? '';
+                if (is_array($departments_raw)) {
+                    $departments = array_map('strval', $departments_raw);
+                    usort($departments, function($a, $b) { return strnatcasecmp($a, $b); });
+                    $departments_str = '<div class="tp-departments">' . implode(', ', $departments) . '</div>';
+                } else {
+                    $departments_str = (string)$departments_raw;
+                }
             }
 
             // Combine educatorDescription and studentDescription fields into additional info
@@ -178,7 +190,7 @@ class Sync
                 $badge($record['educators'] ?? ''),
                 $badge($record['students'] ?? ''),
                 $scalar($record['chargeable'] ?? ''),
-                $scalar($implode_if_array($record['subjects'] ?? '')),
+                $scalar($record['subjects'] ?? ''),
                 $scalar($departments_str),
                 $additionalInfo,
                 self::format_updated_display($record['updated'] ?? ''),
@@ -187,30 +199,69 @@ class Sync
 
         $updatedCount = 0;
         $maxUpdatedTs = 0;
-        $initialRebuild = $force_run || ($lastSync === '') || !$hasNumber;
+        $initialRebuild = $force_run || ($lastSync === '') || empty($existing);
 
         // Statuses to skip
         $skip_statuses = array('ei käsitelty', 'tarkastettavana');
 
         if ($initialRebuild) {
-            $newData = array(); $newData[0] = $header; $order = array();
+
+            $newData = array();
+            $newData[] = $header;
+
             foreach ($items as $rec) {
-                if (!is_array($rec)) continue;
-                $num = isset($rec['number']) ? trim((string)$rec['number']) : '';
-                if ($num === '') continue;
-                $upd = isset($rec['updated']) ? (string)$rec['updated'] : '';
-                $ts = $upd !== '' ? self::parse_updated_ts($upd) : 0;
-                if ($ts > $maxUpdatedTs) $maxUpdatedTs = $ts;
+                if (!is_array($rec)) {
+                    continue;
+                }
+
+                $num = isset($rec['number']) ? trim((string) $rec['number']) : '';
+                
+                if ($num === '') {
+                    continue;
+                }
 
                 if (self::should_skip_record($rec, $skip_statuses)) {
                     continue;
                 }
 
-                $row = $toRow($rec);
-                $newData[] = $row; $order[] = $num; $updatedCount++;
+                $upd = isset($rec['updated']) ? (string) $rec['updated'] : '';
+                $ts  = ($upd !== '') ? self::parse_updated_ts($upd) : 0;
+
+                if ($ts > $maxUpdatedTs) {
+                    $maxUpdatedTs = $ts;
+                }
+
+                $newData[] = $toRow($rec);
             }
-            if ($dry_run) return array('dry_run'=>true, 'rows'=>max(0, count($newData)-1), 'updated'=>$updatedCount);
+
+            $rebuiltRows = count($newData) - 1;
+
+            if ($dry_run) {
+                return array(
+                    'dry_run' => true,
+                    'rows'    => $rebuiltRows,
+                    'updated' => $rebuiltRows,
+                );
+            }
+
             $table['data'] = $newData;
+            $updatedCount  = $rebuiltRows;
+
+            // Force sorting by "Name" column (index 1) on force-run
+            $header = $table['data'][0] ?? null;
+            $rows = array_slice($table['data'], 1);
+
+            usort($rows, function($a, $b) {
+                if (!isset($a[1], $b[1])) return 0;
+                return strnatcasecmp($a[1], $b[1]);
+            });
+
+            if ($header !== null) {
+                $table['data'] = array_merge([$header], $rows);
+            } else {
+                $table['data'] = $rows;
+            }
+            
         } else {
             $lastTs = 0;
             if ($lastSync !== '') $lastTs = self::parse_updated_ts($lastSync);
@@ -230,31 +281,41 @@ class Sync
                     }
 
                     $row = $toRow($rec);
-                    if (isset($map[$num])) $map[$num] = $row;
-                    else $pendingNew[$num] = $row;
+
+                    if (isset($map[$num])) {
+                        if ($map[$num] !== $row) {
+                            $map[$num] = $row;
+                            $updatedCount++;
+                        }
+                    } else {
+                        $pendingNew[$num] = $row;
+                        $updatedCount++;
+                    }
+                }
+            }
+            $newData = array();
+            $newData[] = $header;
+
+            if (!empty($pendingNew)) {
+                ksort($pendingNew, SORT_NATURAL | SORT_FLAG_CASE);
+                foreach ($pendingNew as $row) {
+                    $newData[] = $row;
                     $updatedCount++;
                 }
             }
-            $newData = array(); $newData[0] = $header;
-            foreach ($order as $n) { if (isset($map[$n])) $newData[] = $map[$n]; }
-            if (!empty($pendingNew)) {
-                ksort($pendingNew, SORT_NATURAL | SORT_FLAG_CASE);
-                foreach ($pendingNew as $n => $row) { $newData[] = $row; $order[] = $n; }
-            }
-            if ($dry_run) return array('dry_run'=>true, 'rows'=>max(0, count($newData)-1), 'updated'=>$updatedCount);
-            $table['data'] = $newData;
         }
 
         if (!isset($table['visibility']) || !is_array($table['visibility'])) $table['visibility'] = array();
         if (!isset($table['visibility']['columns']) || !is_array($table['visibility']['columns'])) $table['visibility']['columns'] = array();
         if (!in_array(1, $table['visibility']['columns'], true)) {
-            $table['visibility']['columns'][] = 1;
+            $table['visibility']['columns'][] = 1; // Hide "Number" column (index 1)
         }
 
-        // BEFORE saving: restore existing options so we don't override user's settings (sortby etc.)
+        // BEFORE saving: restore existing options so we don't override user's settings
         $table['options'] = $existing_options;
 
         $save = $model->save($table);
+
         if (is_wp_error($save)) return $save;
 
         if ($updatedCount > 0 && $maxUpdatedTs > 0) {

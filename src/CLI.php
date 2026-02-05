@@ -3,10 +3,9 @@ namespace ServiceNowTablePressSync;
 
 use WP_CLI;
 
-class CLI
-{
-    public static function register_commands(): void
-    {
+class CLI {
+    
+    public static function register_commands(): void {
         WP_CLI::add_command(
             'servicenow sync',
             array(__CLASS__, 'sync'),
@@ -20,8 +19,7 @@ class CLI
         );
     }
 
-    public static function sync(array $args, array $assoc_args): void
-    {
+    public static function sync(array $args, array $assoc_args): void {
         $opt_url  = (string) get_option(\SN_TP_SYNC_OPT_API_URL,  '');
         $opt_user = (string) get_option(\SN_TP_SYNC_OPT_API_USER, '');
         $opt_pass = (string) get_option(\SN_TP_SYNC_OPT_API_PASS, '');
@@ -45,8 +43,7 @@ class CLI
         else WP_CLI::success('Table updated. Rows: ' . (int)$res['rows'] . '. Updated items: ' . (int)$res['updated']);
     }
 
-    public static function lastsync(array $args, array $assoc_args): void
-    {
+    public static function lastsync(array $args, array $assoc_args): void {
         $tableId = isset($assoc_args['table']) ? (int)$assoc_args['table'] : (int) get_option(\SN_TP_SYNC_OPT_TABLE_ID, 0);
         if ($tableId <= 0) WP_CLI::error('Provide --table=<id> or set the option.');
         if (isset($assoc_args['set'])) {

@@ -1,17 +1,15 @@
 <?php
 namespace ServiceNowTablePressSync;
 
-class Admin
-{
-    public static function init(): void
-    {
+class Admin {
+
+    public static function init(): void {
         add_action('admin_menu', array(__CLASS__, 'menu'));
         add_action('admin_init', array(__CLASS__, 'register_settings'));
         add_action('admin_post_servicenow_tablepress_sync_run', array(__CLASS__, 'handle_run'));
     }
 
-    public static function menu(): void
-    {
+    public static function menu(): void {
         add_options_page(
             'ServiceNow TablePress Sync (Incremental)',
             'ServiceNow TablePress Sync',
@@ -21,16 +19,16 @@ class Admin
         );
     }
 
-    public static function register_settings(): void
-    {
+    public static function register_settings(): void {
         register_setting('servicenow_tp_incr_group', \SN_TP_SYNC_OPT_API_URL, array('type'=>'string','sanitize_callback'=>'esc_url_raw'));
         register_setting('servicenow_tp_incr_group', \SN_TP_SYNC_OPT_API_USER, array('type'=>'string','sanitize_callback'=>'sanitize_text_field'));
         register_setting('servicenow_tp_incr_group', \SN_TP_SYNC_OPT_API_PASS, array('type'=>'string','sanitize_callback'=>'sanitize_text_field'));
-        register_setting('servicenow_tp_incr_group', \SN_TP_SYNC_OPT_TABLE_ID, array('type'=>'integer','sanitize_callback'=>function($v){return (int)$v;}));
+        register_setting('servicenow_tp_incr_group', \SN_TP_SYNC_OPT_TABLE_ID, array('type'=>'integer','sanitize_callback' => function ($v) {
+            return max(1, absint($v));
+        }));
     }
 
-    public static function handle_run(): void
-    {
+    public static function handle_run(): void {
         if (!current_user_can('manage_options')) wp_die('Insufficient permissions.');
         check_admin_referer('sn_tp_incr_run');
 
@@ -61,8 +59,7 @@ class Admin
         wp_safe_redirect(add_query_arg(array('page'=>'servicenow-tablepress-sync','snmsg'=>rawurlencode($msg),'snsuccess'=>1), admin_url('options-general.php'))); exit;
     }
 
-    private static function store_last_run(bool $ok, string $message, int $rows, int $updated): void
-    {
+    public static function store_last_run(bool $ok, string $message, int $rows, int $updated): void {
         update_option(\SN_TP_SYNC_OPT_LAST_RUN, array(
             'time_utc' => gmdate('Y-m-d H:i:s'),
             'success'  => $ok,
@@ -72,8 +69,7 @@ class Admin
         ));
     }
 
-    public static function render(): void
-    {
+    public static function render(): void {
         if (!current_user_can('manage_options')) return;
         $api_url  = (string) get_option(\SN_TP_SYNC_OPT_API_URL,  '');
         $api_user = (string) get_option(\SN_TP_SYNC_OPT_API_USER, '');
@@ -135,6 +131,7 @@ class Admin
                 <tbody>
                 <tr><th style="width:220px;">Viimeisin haettu aikaleima (API)</th><td><?php echo $last_sync !== '' ? esc_html($last_sync) : '—'; ?></td></tr>
                 <tr><th>Viimeisin ajo (UTC)</th><td><?php echo isset($last_run['time_utc']) ? esc_html($last_run['time_utc']) : '—'; ?></td></tr>
+                <tr><th>Viimeisin WP-cronin ajo (UTC)</th><td><?php echo esc_html(get_option('SN_TP_SYNC_OPT_LAST_CRON', '—')); ?></td></tr>
                 <tr><th>Tulos</th><td><?php echo isset($last_run['success']) ? ($last_run['success'] ? 'Onnistui' : 'Epäonnistui') : '—'; ?></td></tr>
                 <tr><th>Rivejä</th><td><?php echo isset($last_run['rows']) ? (int)$last_run['rows'] : 0; ?></td></tr>
                 <tr><th>Päivitettyjä</th><td><?php echo isset($last_run['updated']) ? (int)$last_run['updated'] : 0; ?></td></tr>
