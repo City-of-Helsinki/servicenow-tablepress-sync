@@ -23,7 +23,9 @@ class Admin {
         register_setting('servicenow_tp_incr_group', \SN_TP_SYNC_OPT_API_URL, array('type'=>'string','sanitize_callback'=>'esc_url_raw'));
         register_setting('servicenow_tp_incr_group', \SN_TP_SYNC_OPT_API_USER, array('type'=>'string','sanitize_callback'=>'sanitize_text_field'));
         register_setting('servicenow_tp_incr_group', \SN_TP_SYNC_OPT_API_PASS, array('type'=>'string','sanitize_callback'=>'sanitize_text_field'));
-        register_setting('servicenow_tp_incr_group', \SN_TP_SYNC_OPT_TABLE_ID, array('type'=>'integer','sanitize_callback'=>function($v){return (int)$v;}));
+        register_setting('servicenow_tp_incr_group', \SN_TP_SYNC_OPT_TABLE_ID, array('type'=>'integer','sanitize_callback' => function ($v) {
+            return max(1, absint($v));
+        }));
     }
 
     public static function handle_run(): void {
